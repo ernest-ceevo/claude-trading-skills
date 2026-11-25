@@ -6,14 +6,14 @@
       "findings": [
         {
           "improvement": "Use a dedicated output path like `reports/` to avoid source tree pollution.",
-          "line": 33,
+          "line": 39,
           "message": "Sample commands write generated reports into source `scripts/` directory.",
           "path": "skills/vcp-screener/SKILL.md",
           "severity": "medium"
         },
         {
           "improvement": "Add an explicit example like `export FMP_API_KEY=...`.",
-          "line": 21,
+          "line": 22,
           "message": "API key is documented, but no copy-paste setup command is shown.",
           "path": "skills/vcp-screener/SKILL.md",
           "severity": "low"
@@ -68,7 +68,7 @@
         {
           "axis": "auto",
           "improvement": "Use a dedicated output path like `reports/` to avoid source tree pollution.",
-          "line": 33,
+          "line": 39,
           "message": "Sample commands write generated reports into source `scripts/` directory.",
           "path": "skills/vcp-screener/SKILL.md",
           "severity": "medium"
@@ -76,7 +76,7 @@
         {
           "axis": "auto",
           "improvement": "Add an explicit example like `export FMP_API_KEY=...`.",
-          "line": 21,
+          "line": 22,
           "message": "API key is documented, but no copy-paste setup command is shown.",
           "path": "skills/vcp-screener/SKILL.md",
           "severity": "low"

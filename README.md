@@ -1,5 +1,21 @@
 # Claude Trading Skills
 
+## Market Data Providers
+
+The price surface (daily bars, latest quotes) supports two interchangeable
+providers in the shared `fmp_client.py` transport:
+
+- **FMP** (upstream default) - requires `FMP_API_KEY`
+- **Alpaca** (this fork) - requires `ALPACA_API_KEY` + `ALPACA_SECRET_KEY`;
+  auto-detected, or forced with `DATA_SOURCE=alpaca` / `DATA_SOURCE=fmp`
+
+When Alpaca credentials are present, bars and quotes come from Alpaca and
+FMP is only used as a fallback. FMP-only endpoints (calendars, COT, 13F,
+S&P 500 constituents, dividends, fundamentals) are unchanged. Coverage,
+caveats, and feed notes: [Alpaca provider](docs/en/alpaca-provider.md).
+Set `MARKET_CACHE_PATH` to a SQLite file to cache daily bars across runs
+(read-through, gap-fill, zero network on hits).
+
 **Data handling:** [Privacy policy](docs/en/privacy.md) · [Security policy](SECURITY.md)
 
 Claude Trading Skills started as a personal project to use AI to improve my own trading process.

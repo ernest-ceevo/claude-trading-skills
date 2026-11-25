@@ -12,12 +12,29 @@ directory to the front of ``sys.path`` while retaining per-skill module identity
 """
 
 import ipaddress
+import os
 import socket
 import sys
 from collections import Counter
 from pathlib import Path
 
 import pytest
+
+
+@pytest.fixture(autouse=True)
+def _fmp_test_provider_defaults(monkeypatch):
+    """Force the FMP provider for mocked unit tests.
+
+    ``fmp_client.py`` auto-detects its market-data provider from the
+    environment (Alpaca when ALPACA_API_KEY/ALPACA_SECRET_KEY are set).
+    Unit tests exercise mocked FMP endpoints, so ambient Alpaca credentials
+    on the host would silently reroute them to the live Alpaca boundary and
+    trip the offline network guard. Tests that explicitly exercise the
+    Alpaca path set DATA_SOURCE=alpaca with their own fixture.
+    """
+    monkeypatch.delenv("ALPACA_API_KEY", raising=False)
+    monkeypatch.delenv("ALPACA_SECRET_KEY", raising=False)
+    monkeypatch.setenv("DATA_SOURCE", "fmp")
 
 
 class _OfflineNetworkGuard:

@@ -18,6 +18,12 @@ Build and maintain a model book for Stockbee-style Momentum Burst setups. This s
 - User wants a weekly blind replay of their own VCP enter/wait/pass decisions, with rule adherence scored separately from the later price path
 
 ## Prerequisites
+ 
+> **Alpaca price data (fork):** daily bars and latest quotes can be served by the
+> Alpaca market-data provider (`ALPACA_API_KEY` + `ALPACA_SECRET_KEY`, or forced with
+> `DATA_SOURCE=alpaca`) with no FMP key required. FMP-only endpoints (earnings/economic
+> calendars, COT, 13F, S&P 500 constituents, dividends, fundamentals) degrade to their
+> documented fallbacks. Coverage details: `docs/en/alpaca-provider.md`.
 
 - Python 3.10+
 - A `stockbee-momentum-burst-screener` JSON report, or compatible candidate JSON

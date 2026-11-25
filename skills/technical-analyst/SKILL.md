@@ -18,6 +18,12 @@ This skill enables comprehensive technical analysis of weekly price charts. Anal
 - Require objective chart-based analysis without fundamental or news considerations
 
 ## Prerequisites
+ 
+> **Alpaca price data (fork):** daily bars and latest quotes can be served by the
+> Alpaca market-data provider (`ALPACA_API_KEY` + `ALPACA_SECRET_KEY`, or forced with
+> `DATA_SOURCE=alpaca`) with no FMP key required. FMP-only endpoints (earnings/economic
+> calendars, COT, 13F, S&P 500 constituents, dividends, fundamentals) degrade to their
+> documented fallbacks. Coverage details: `docs/en/alpaca-provider.md`.
 
 - **Chart Images**: User must provide weekly timeframe chart images for analysis
 - **No API Keys Required**: This skill analyzes user-provided images; no external data fetches

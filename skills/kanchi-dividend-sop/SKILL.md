@@ -19,6 +19,12 @@ Use this skill when the user needs:
 - A handoff package for monitoring and tax/account-location workflows.
 
 ## Prerequisites
+ 
+> **Alpaca price data (fork):** daily bars and latest quotes can be served by the
+> Alpaca market-data provider (`ALPACA_API_KEY` + `ALPACA_SECRET_KEY`, or forced with
+> `DATA_SOURCE=alpaca`) with no FMP key required. FMP-only endpoints (earnings/economic
+> calendars, COT, 13F, S&P 500 constituents, dividends, fundamentals) degrade to their
+> documented fallbacks. Coverage details: `docs/en/alpaca-provider.md`.
 
 ### API Key Setup
 

@@ -15,6 +15,12 @@ Analyze recent post-earnings stocks using a 5-factor weighted scoring system to 
 - User asks about post-earnings accumulation day (PEAD) candidates
 
 ## Prerequisites
+ 
+> **Alpaca price data (fork):** daily bars and latest quotes can be served by the
+> Alpaca market-data provider (`ALPACA_API_KEY` + `ALPACA_SECRET_KEY`, or forced with
+> `DATA_SOURCE=alpaca`) with no FMP key required. FMP-only endpoints (earnings/economic
+> calendars, COT, 13F, S&P 500 constituents, dividends, fundamentals) degrade to their
+> documented fallbacks. Coverage details: `docs/en/alpaca-provider.md`.
 
 - FMP API key (set `FMP_API_KEY` environment variable or pass `--api-key`)
 - Free tier (250 calls/day) is sufficient for default screening (lookback 2 days, top 20)

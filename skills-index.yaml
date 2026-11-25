@@ -193,6 +193,9 @@ skills:
   timeframe: weekly
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -285,6 +288,9 @@ skills:
   timeframe: weekly
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -321,6 +327,9 @@ skills:
   timeframe: research
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -416,6 +425,9 @@ skills:
   timeframe: event-driven
   difficulty: beginner
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -446,6 +458,9 @@ skills:
   timeframe: event-driven
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -478,6 +493,9 @@ skills:
   timeframe: event-driven
   difficulty: beginner
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -812,6 +830,9 @@ skills:
   timeframe: daily
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -880,6 +901,9 @@ skills:
   timeframe: daily
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -911,6 +935,9 @@ skills:
   timeframe: research
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -972,6 +999,9 @@ skills:
   timeframe: weekly
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: recommended
@@ -1255,6 +1285,9 @@ skills:
   timeframe: event-driven
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -1291,6 +1324,9 @@ skills:
   timeframe: event-driven
   difficulty: advanced
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: optional
@@ -1324,6 +1360,9 @@ skills:
   timeframe: research
   difficulty: advanced
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -1390,6 +1429,9 @@ skills:
   timeframe: event-driven
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -1613,6 +1655,9 @@ skills:
   timeframe: event-driven
   difficulty: beginner
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: local_calculation
     type: calculation
     requirement: not_required
@@ -1759,6 +1804,9 @@ skills:
   timeframe: daily
   difficulty: advanced
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -1804,6 +1852,9 @@ skills:
   timeframe: event-driven
   difficulty: advanced
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: catalyst_events_json
     type: local_file
     requirement: required
@@ -1841,6 +1892,9 @@ skills:
   timeframe: daily
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -1879,6 +1933,9 @@ skills:
   timeframe: daily
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -1913,6 +1970,9 @@ skills:
   timeframe: daily
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: prices_json
     type: local_file
     requirement: optional
@@ -1985,6 +2045,9 @@ skills:
   timeframe: event-driven
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: chart_image
     type: image
     requirement: required
@@ -2022,6 +2085,9 @@ skills:
   timeframe: weekly
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: optional
@@ -2123,6 +2189,9 @@ skills:
   timeframe: event-driven
   difficulty: beginner
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: optional
@@ -2298,6 +2367,9 @@ skills:
   timeframe: weekly
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required
@@ -2333,6 +2405,9 @@ skills:
   timeframe: daily
   difficulty: intermediate
   integrations:
+  - id: alpaca
+    type: market_data
+    requirement: optional
   - id: fmp
     type: market_data
     requirement: required

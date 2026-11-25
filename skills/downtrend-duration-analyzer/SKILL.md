@@ -18,6 +18,12 @@ Analyze historical price data to identify downtrend periods (peak-to-trough) and
 - Setting stop-loss timeouts or position holding period limits
 
 ## Prerequisites
+ 
+> **Alpaca price data (fork):** daily bars and latest quotes can be served by the
+> Alpaca market-data provider (`ALPACA_API_KEY` + `ALPACA_SECRET_KEY`, or forced with
+> `DATA_SOURCE=alpaca`) with no FMP key required. FMP-only endpoints (earnings/economic
+> calendars, COT, 13F, S&P 500 constituents, dividends, fundamentals) degrade to their
+> documented fallbacks. Coverage details: `docs/en/alpaca-provider.md`.
 
 - Python 3.9+
 - FMP API key (set `FMP_API_KEY` environment variable or use `--api-key`)

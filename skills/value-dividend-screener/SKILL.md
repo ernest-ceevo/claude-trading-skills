@@ -27,6 +27,12 @@ Invoke this skill when the user requests:
 - Any request combining dividend yield, valuation metrics, and fundamental analysis
 
 ## Prerequisites
+ 
+> **Alpaca price data (fork):** daily bars and latest quotes can be served by the
+> Alpaca market-data provider (`ALPACA_API_KEY` + `ALPACA_SECRET_KEY`, or forced with
+> `DATA_SOURCE=alpaca`) with no FMP key required. FMP-only endpoints (earnings/economic
+> calendars, COT, 13F, S&P 500 constituents, dividends, fundamentals) degrade to their
+> documented fallbacks. Coverage details: `docs/en/alpaca-provider.md`.
 
 - **FMP API key:** Required. Set `FMP_API_KEY` or pass `--fmp-api-key`. The stock-screener endpoint is not on the free plan (2026-11); use `--use-finviz` or an FMP plan that includes it (see `docs/en/getting-started.md#fmp-plans`).
 - **FINVIZ Elite API key:** Recommended, not required. Set `FINVIZ_API_KEY` or pass `--finviz-api-key` and use `--use-finviz` for two-stage screening. Without it the screener runs FMP-only and uses more API calls.

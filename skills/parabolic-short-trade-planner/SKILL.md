@@ -48,6 +48,12 @@ Do NOT invoke for:
   count, but the trader fires the order manually.
 
 ## Prerequisites
+ 
+> **Alpaca price data (fork):** daily bars and latest quotes can be served by the
+> Alpaca market-data provider (`ALPACA_API_KEY` + `ALPACA_SECRET_KEY`, or forced with
+> `DATA_SOURCE=alpaca`) with no FMP key required. FMP-only endpoints (earnings/economic
+> calendars, COT, 13F, S&P 500 constituents, dividends, fundamentals) degrade to their
+> documented fallbacks. Coverage details: `docs/en/alpaca-provider.md`.
 
 - **FMP API key:** Required. Set `FMP_API_KEY` or pass `--api-key` for the Phase 1 screener.
 - **Alpaca API keys:** Optional. Set `ALPACA_API_KEY` and `ALPACA_SECRET_KEY` for live borrow checks in Phase 2 and for live 5-minute bars in Phase 3. Without them Phase 2 falls back to `ManualBrokerAdapter` and marks candidates `watch_only`. Offline runs: Phase 1 `screen_parabolic.py --dry-run --fixture <path>`, Phase 2 `generate_pre_market_plan.py --broker none`, Phase 3 `monitor_intraday_trigger.py --bars-source fixture --bars-fixture <path>`.

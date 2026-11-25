@@ -19,6 +19,12 @@ Signal Postmortem records and analyzes the outcomes of trading signals generated
 - For periodic (weekly/monthly) signal quality audits
 
 ## Prerequisites
+ 
+> **Alpaca price data (fork):** daily bars and latest quotes can be served by the
+> Alpaca market-data provider (`ALPACA_API_KEY` + `ALPACA_SECRET_KEY`, or forced with
+> `DATA_SOURCE=alpaca`) with no FMP key required. FMP-only endpoints (earnings/economic
+> calendars, COT, 13F, S&P 500 constituents, dividends, fundamentals) degrade to their
+> documented fallbacks. Coverage details: `docs/en/alpaca-provider.md`.
 
 - Python 3.9+
 - FMP API key (optional, for fetching realized returns if not provided manually)

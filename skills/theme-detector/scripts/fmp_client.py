@@ -14,6 +14,7 @@ Features:
 - Stable quote/full-EOD/holdings for the theme detector
 """
 
+import base64
 import os
 import re
 import sys
@@ -96,6 +97,178 @@ _FMP_ENDPOINTS = {
     ],
 }
 
+# Optional Alpaca market-data provider (tradermonty/claude-trading-skills fork).
+# Covers the shared price surface only: daily bars ("historical") and latest
+# quotes ("quote"). Extension endpoints (earnings calendar, COT, 13F, S&P 500
+# constituents, dividends, fundamentals) have no Alpaca equivalent and stay
+# FMP-only; those skills degrade to their documented manual/CSV fallbacks.
+_ALPACA_DATA_BASE = "https://data.alpaca.markets/v2/stocks"
+
+
+def _alpaca_symbol(symbol: str) -> str:
+    """Map an FMP-style ticker to an Alpaca ticker (BRK-B -> BRK.B)."""
+    return symbol.strip().upper().replace("-", ".")
+
+
+def _alpaca_date_window(days: int) -> tuple[str, str]:
+    """Calendar-date window generous enough to contain `days` trading days."""
+    today = _et_today()
+    start = (today - timedelta(days=int(days) * 2 + 5)).isoformat()
+    return start, today.isoformat()
+
+
+def _fmp_bar_row(bar: dict) -> dict:
+    """One Alpaca bar -> one FMP v3 historical row.
+
+    Alpaca bars are fetched unadjusted (adjustment=raw), matching the FMP
+    unadjusted `close` contract. `adjClose` is set equal to `close` because
+    Alpaca's raw bars carry no dividend adjustment; skills needing total-return
+    prices must treat adjClose as raw.
+    """
+    return {
+        "date": (bar.get("t") or "")[:10],
+        "open": bar.get("o"),
+        "high": bar.get("h"),
+        "low": bar.get("l"),
+        "close": bar.get("c"),
+        "adjClose": bar.get("c"),
+        "volume": bar.get("v"),
+    }
+
+
+# --- Optional SQLite market-data cache -------------------------------------
+# Enabled only when MARKET_CACHE_PATH points at a cache database. The cache
+# is read-through with gap fill for daily bars: hit (enough rows, data
+# current) -> serve from the DB with zero network; miss -> fetch only the
+# missing symbols from the provider and upsert them. Quotes stay live.
+# All cache failures are fail-open: they degrade to a plain network fetch.
+
+def _cache_enabled() -> bool:
+    """True when a daily-bar cache database is configured."""
+    return bool((os.getenv("MARKET_CACHE_PATH") or "").strip())
+
+
+def _cache_connect():
+    """Open (and initialize) the SQLite daily-bar cache. Failures -> None."""
+    try:
+        import sqlite3
+
+        path = (os.getenv("MARKET_CACHE_PATH") or "").strip()
+        if not path:
+            return None
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        conn = sqlite3.connect(path, timeout=5)
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA busy_timeout=5000")
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS daily_bars ("
+            "symbol TEXT NOT NULL,"
+            "date TEXT NOT NULL,"
+            "open REAL, high REAL, low REAL, close REAL, adj_close REAL,"
+            "volume REAL,"
+            "source TEXT NOT NULL DEFAULT 'alpaca',"
+            "fetched_at TEXT NOT NULL,"
+            "PRIMARY KEY (symbol, date))"
+        )
+        conn.commit()
+        return conn
+    except Exception as exc:  # pragma: no cover - defensive fail-open
+        print(f"WARN: market cache disabled ({type(exc).__name__}: {exc})", file=sys.stderr)
+        return None
+
+
+def _cache_expected_latest_date() -> str:
+    """Most recent weeknight that should have a completed daily bar (ET).
+
+    Bars land some time after the 16:00 ET close, so today only counts once
+    it is 17:00 ET. Holidays self-heal: an expectation of a holiday session
+    just fails the freshness check and triggers a cheap refetch.
+    """
+    try:
+        tz = ZoneInfo("America/New_York")
+    except ZoneInfoNotFoundError:  # pragma: no cover - defensive
+        return ""
+    now = datetime.now(tz)
+    day = now.date()
+    if day.weekday() >= 5 or now.hour < 17:
+        day = day - timedelta(days=1)
+        while day.weekday() >= 5:
+            day = day - timedelta(days=1)
+    return day.isoformat()
+
+
+def _cache_load(conn, symbol: str, start: str, end: str, limit: int):
+    """Newest `limit` cached rows for symbol within [start, end], desc order."""
+    cursor = conn.execute(
+        "SELECT date, open, high, low, close, adj_close, volume FROM daily_bars"
+        " WHERE symbol = ? AND date >= ? AND date <= ?"
+        " ORDER BY date DESC LIMIT ?",
+        (symbol, start, end, int(limit)),
+    )
+    return cursor.fetchall()
+
+
+def _cache_store(conn, symbol: str, rows: list[dict]) -> None:
+    """Upsert one symbol's daily-bar rows (newest-first or oldest-first)."""
+    from datetime import datetime as _dt
+
+    stamp = _dt.now(tz=ZoneInfo("UTC")).isoformat(timespec="seconds")
+    payload = [
+        (
+            symbol,
+            row["date"],
+            row.get("open"),
+            row.get("high"),
+            row.get("low"),
+            row.get("close"),
+            row.get("adjClose"),
+            row.get("volume"),
+            "alpaca",
+            stamp,
+        )
+        for row in rows
+        if row.get("date")
+    ]
+    if payload:
+        conn.executemany(
+            "INSERT OR REPLACE INTO daily_bars"
+            " (symbol, date, open, high, low, close, adj_close, volume,"
+            "  source, fetched_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            payload,
+        )
+        conn.commit()
+
+
+def _cache_hit(conn, symbol: str, start: str, end: str, days: int):
+    """Return newest `days` cached rows when cache coverage is complete.
+
+    A hit needs at least `days` rows in the window AND a newest bar at or
+    after the expected latest completed session. Otherwise returns None and
+    the caller fetches from the provider.
+    """
+    expected = _cache_expected_latest_date()
+    if not expected:
+        return None
+    rows = _cache_load(conn, symbol, start, end, int(days))
+    if len(rows) < int(days) or rows[0][0] < expected:
+        return None
+
+    def _row(rec):
+        return {
+            "date": rec[0],
+            "open": rec[1],
+            "high": rec[2],
+            "low": rec[3],
+            "close": rec[4],
+            "adjClose": rec[5],
+            "volume": rec[6],
+        }
+
+    return [_row(rec) for rec in rows]
+
 
 def _normalize_eod_flat_list(data, symbols_str: str, limit: Optional[int] = None):
     """Convert stable/historical-price-eod/full flat list to v3-compatible dict.
@@ -147,17 +320,21 @@ class FMPClient:
     """Client for Financial Modeling Prep API with rate limiting and caching"""
 
     BASE_URL = "https://financialmodelingprep.com/api/v3"
+    ALPACA_DATA_BASE = _ALPACA_DATA_BASE
     RATE_LIMIT_DELAY = 0.3  # 300ms between requests
 
     _ENDPOINT_FAILURE_THRESHOLD = 3  # disable endpoint after N consecutive failures
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = (api_key or os.getenv("FMP_API_KEY") or "").strip()
-        if not self.api_key:
+        self.provider = self._resolve_provider()
+        if self.provider == "fmp" and not self.api_key:
             raise ValueError(
-                "FMP API key required. Set FMP_API_KEY environment variable "
-                "or pass api_key parameter."
+                "API key required. Set FMP_API_KEY environment variable, or set "
+                "ALPACA_API_KEY and ALPACA_SECRET_KEY to use the Alpaca "
+                "market-data provider (or pass api_key parameter)."
             )
+        self.alpaca_feed = (os.getenv("ALPACA_DATA_FEED") or "iex").strip().lower()
         self.session = requests.Session()
         self.timeout = 30
         self.cache = {}
@@ -183,6 +360,216 @@ class FMPClient:
             if text.startswith("invalid JSON response"):
                 return "invalid JSON response"
         return "***REDACTED***"
+
+    def _resolve_provider(self) -> str:
+        """Resolve the market-data provider for this client instance.
+
+        Priority: explicit ``DATA_SOURCE`` env (``alpaca`` / ``fmp``), else
+        auto-detect — Alpaca when ALPACA_API_KEY + ALPACA_SECRET_KEY are both
+        set, else FMP (which then requires FMP_API_KEY).
+        """
+        explicit = (os.getenv("DATA_SOURCE") or "").strip().lower()
+        if explicit in ("alpaca", "fmp"):
+            return explicit
+        if (
+            os.getenv("ALPACA_API_KEY", "").strip()
+            and os.getenv("ALPACA_SECRET_KEY", "").strip()
+        ):
+            return "alpaca"
+        return "fmp"
+
+    def _alpaca_fetch(self, endpoint_key, symbols_str, params) -> Optional[object]:
+        """Route an endpoint through Alpaca; returns already-v3-shaped data or None.
+
+        Only the shared price surface is supported: "historical" (daily bars)
+        and "quote" (latest snapshot). Any other endpoint_key returns None so
+        the caller falls back to (or fails loudly on) the FMP chain.
+        """
+        if endpoint_key == "historical":
+            timeseries = params.get("timeseries") if isinstance(params, dict) else None
+            return self._alpaca_historical(symbols_str, timeseries)
+        if endpoint_key == "quote":
+            return self._alpaca_quote(symbols_str)
+        return None
+
+    def _alpaca_get(self, path: str, params: dict) -> Optional[dict]:
+        """Rate-limited authenticated GET against the Alpaca market-data v2 API."""
+        key = (os.getenv("ALPACA_API_KEY") or "").strip()
+        secret = (os.getenv("ALPACA_SECRET_KEY") or "").strip()
+        if not key or not secret:
+            self._last_error = "ALPACA_API_KEY / ALPACA_SECRET_KEY not set"
+            return None
+        self._last_error = None
+        elapsed = time.time() - self.last_call_time
+        if elapsed < self.RATE_LIMIT_DELAY:
+            time.sleep(self.RATE_LIMIT_DELAY - elapsed)
+        self.last_call_time = time.time()
+        self.api_calls_made += 1
+        token = base64.b64encode(f"{key}:{secret}".encode()).decode()
+        try:
+            response = self.session.get(
+                f"{self.ALPACA_DATA_BASE}/{path}",
+                params=params,
+                headers={"Authorization": f"Basic {token}"},
+                timeout=30,
+            )
+        except requests.exceptions.RequestException as e:
+            redacted = self._redact_secret(str(e))
+            self._last_error = f"request exception: {redacted}"
+            print(f"ERROR: Request exception: {redacted}", file=sys.stderr)
+            return None
+        if response.status_code != 200:
+            body = self._redact_secret((response.text or "")[:200])
+            self._last_error = f"HTTP {response.status_code} - {body}"
+            print(f"ERROR: Alpaca request failed: {self._last_error}", file=sys.stderr)
+            return None
+        try:
+            return response.json()
+        except ValueError as e:
+            self._last_error = f"invalid JSON response: {e}"
+            return None
+
+    def _alpaca_historical(self, symbols_str: str, timeseries) -> Optional[dict]:
+        """Alpaca daily bars -> FMP v3 shape, rows most-recent-first.
+
+        Result rows carry the FMP `adjClose` field set equal to the raw close
+        (Alpaca raw bars carry no dividend adjustment — see _fmp_bar_row).
+        """
+        alpaca_syms = [_alpaca_symbol(s) for s in symbols_str.split(",") if s.strip()]
+        supported = [s for s in alpaca_syms if not s.startswith("^")]
+        if not supported:
+            self._last_error = f"Alpaca has no data for index symbols: {symbols_str}"
+            return None
+        try:
+            days = int(timeseries) if timeseries is not None else 730
+        except (TypeError, ValueError):
+            days = 730
+        if days <= 0:
+            days = 730
+        start, end = _alpaca_date_window(days)
+        rows_by_symbol: dict[str, dict] = {}
+
+        # Read-through cache: symbols fully covered by MARKET_CACHE_PATH data
+        # come back with zero network calls; fetch only the uncovered gap set.
+        conn = _cache_connect() if _cache_enabled() else None
+        cached_ok: dict[str, list[dict]] = {}
+        if conn is not None:
+            try:
+                for sym in supported:
+                    hit = _cache_hit(conn, sym, start, end, days)
+                    if hit:
+                        cached_ok[sym] = hit
+            except Exception as exc:  # pragma: no cover - defensive fail-open
+                print(
+                    f"WARN: market cache read failed ({type(exc).__name__}: {exc})",
+                    file=sys.stderr,
+                )
+                cached_ok = {}
+        gaps = [s for s in supported if s not in cached_ok]
+        if gaps:
+            page_token = None
+            for _ in range(20):
+                params = {
+                    "symbols": ",".join(gaps),
+                    "timeframe": "1Day",
+                    "start": start,
+                    "end": end,
+                    "limit": "10000",
+                    "adjustment": "raw",
+                    "feed": self.alpaca_feed,
+                }
+                if page_token:
+                    params["page_token"] = page_token
+                data = self._alpaca_get("bars", params)
+                if not data:
+                    if not cached_ok:
+                        return None
+                    break  # serve the covered symbols, record the error
+                for sym, bars in (data.get("bars") or {}).items():
+                    by_date = rows_by_symbol.setdefault(sym, {})
+                    for bar in bars or []:
+                        by_date[(bar.get("t") or "")[:10]] = _fmp_bar_row(bar)
+                page_token = data.get("next_page_token")
+                if not page_token:
+                    break
+            if conn is not None and rows_by_symbol:
+                try:
+                    for sym, by_date in rows_by_symbol.items():
+                        _cache_store(conn, sym, list(by_date.values()))
+                except Exception as exc:  # pragma: no cover - defensive
+                    print(
+                        f"WARN: market cache write failed ({type(exc).__name__}: {exc})",
+                        file=sys.stderr,
+                    )
+
+        def _ordered(sym: str) -> list[dict]:
+            if sym in cached_ok:
+                rows = list(cached_ok[sym])
+            elif rows_by_symbol.get(sym):
+                rows = [rows_by_symbol[sym][d] for d in sorted(rows_by_symbol[sym], reverse=True)]
+            else:
+                rows = []
+            # FMP `timeseries=N` returns exactly the most-recent N rows; the
+            # calendar window overprovisions ~2x, so truncate to the contract.
+            if rows and timeseries is not None and int(days) > 0:
+                rows = rows[: int(days)]
+            return rows
+
+        if len(symbols_str.split(",")) == 1:
+            historical = _ordered(supported[0])
+            if not historical:
+                self._last_error = (
+                    f"Alpaca returned no bars for {symbols_str} "
+                    f"(feed={self.alpaca_feed})"
+                )
+                return None
+            return {"symbol": symbols_str, "historical": historical}
+        batch = []
+        for sym in supported:
+            if rows_by_symbol.get(sym):
+                batch.append(
+                    {"symbol": sym.replace(".", "-"), "historical": _ordered(sym)}
+                )
+        return {"historicalStockList": batch} or None
+
+    def _alpaca_quote(self, symbols_str: str) -> Optional[list[dict]]:
+        """Alpaca snapshots -> FMP `quote` list shape (latest prices)."""
+        alpaca_syms = [_alpaca_symbol(s) for s in symbols_str.split(",") if s.strip()]
+        supported = [s for s in alpaca_syms if not s.startswith("^")]
+        if not supported:
+            self._last_error = f"Alpaca has no data for index symbols: {symbols_str}"
+            return None
+        data = self._alpaca_get(
+            "snapshots", {"symbols": ",".join(supported), "feed": self.alpaca_feed}
+        )
+        if not data:
+            return None
+        quotes = []
+        for sym in supported:
+            snap = data.get(sym) or {}
+            daily = snap.get("dailyBar") or {}
+            prev = snap.get("prevDailyBar") or {}
+            trade = snap.get("latestTrade") or {}
+            price = trade.get("p") or daily.get("c")
+            prev_close = prev.get("c")
+            if price is None:
+                continue
+            quote = {
+                "symbol": sym.replace(".", "-"),
+                "price": price,
+                "open": daily.get("o"),
+                "dayHigh": daily.get("h"),
+                "dayLow": daily.get("l"),
+                "previousClose": prev_close,
+                "volume": daily.get("v"),
+                "timestamp": trade.get("t") or daily.get("t"),
+            }
+            if prev_close:
+                change = price - prev_close
+                quote["change"] = change
+                quote["changesPercentage"] = change / prev_close * 100.0
+            quotes.append(quote)
+        return quotes or None
 
     def _rate_limited_get(
         self,
@@ -279,6 +666,29 @@ class FMPClient:
         params = dict(extra_params) if extra_params else {}
         endpoints = _FMP_ENDPOINTS[endpoint_key]
         is_single = "," not in symbols_str
+
+        # Alpaca-first provider: when resolved (auto-detected from Alpaca keys
+        # or forced via DATA_SOURCE=alpaca), serve the shared price surface
+        # from Alpaca before touching any FMP endpoint. On Alpaca failure,
+        # fall through to FMP when a key exists; otherwise fail fast with a
+        # clear message instead of burning three 401s on the FMP chain.
+        if self.provider == "alpaca":
+            alpaca_data = self._alpaca_fetch(endpoint_key, symbols_str, params)
+            if alpaca_data is not None:
+                return alpaca_data
+            if not self.api_key:
+                print(
+                    "ERROR: Alpaca market data unavailable for "
+                    f"'{endpoint_key}' ({self._last_error}) and no FMP_API_KEY "
+                    "fallback is configured.",
+                    file=sys.stderr,
+                )
+                return None
+            print(
+                "WARN: Alpaca provider unavailable for "
+                f"'{endpoint_key}' ({self._last_error}); falling back to FMP",
+                file=sys.stderr,
+            )
 
         for i, (base_url, url_builder) in enumerate(endpoints):
             # Circuit breaker: skip endpoints with too many consecutive failures

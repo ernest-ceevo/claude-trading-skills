@@ -43,6 +43,12 @@ reasons and are not a crowd-psychology signal).
   not single stocks
 
 ## Prerequisites
+ 
+> **Alpaca price data (fork):** daily bars and latest quotes can be served by the
+> Alpaca market-data provider (`ALPACA_API_KEY` + `ALPACA_SECRET_KEY`, or forced with
+> `DATA_SOURCE=alpaca`) with no FMP key required. FMP-only endpoints (earnings/economic
+> calendars, COT, 13F, S&P 500 constituents, dividends, fundamentals) degrade to their
+> documented fallbacks. Coverage details: `docs/en/alpaca-provider.md`.
 
 - **FMP API Key:** Required. Set `FMP_API_KEY` environment variable or pass
   `--api-key`. **COT endpoints require an FMP Premium+ plan** — a free-tier

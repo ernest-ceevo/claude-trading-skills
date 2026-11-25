@@ -27,6 +27,12 @@ Use this skill when:
 - Short-term trading focus (<6 months)
 
 ## Prerequisites
+ 
+> **Alpaca price data (fork):** daily bars and latest quotes can be served by the
+> Alpaca market-data provider (`ALPACA_API_KEY` + `ALPACA_SECRET_KEY`, or forced with
+> `DATA_SOURCE=alpaca`) with no FMP key required. FMP-only endpoints (earnings/economic
+> calendars, COT, 13F, S&P 500 constituents, dividends, fundamentals) degrade to their
+> documented fallbacks. Coverage details: `docs/en/alpaca-provider.md`.
 
 - **FMP API key** (required): Set `FMP_API_KEY` environment variable or pass `--fmp-api-key`. The free plan has a daily request budget; the stock-screener endpoint used by FMP-only mode is not on the free plan (2026-11). Use `--use-finviz` or an FMP plan that includes it (see `docs/en/getting-started.md#fmp-plans`). [Sign up](https://site.financialmodelingprep.com/developer/docs).
 - **FINVIZ Elite API key** (optional, recommended): Set `FINVIZ_API_KEY` environment variable or pass `--finviz-api-key`. Reduces execution time from 10–15 min to 2–3 min. [Sign up](https://elite.finviz.com/).

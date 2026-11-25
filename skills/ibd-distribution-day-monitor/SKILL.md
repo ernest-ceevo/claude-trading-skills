@@ -24,6 +24,12 @@ Do NOT use this skill to:
 - Generate discretionary market predictions outside of the IBD ruleset.
 
 ## Prerequisites
+ 
+> **Alpaca price data (fork):** daily bars and latest quotes can be served by the
+> Alpaca market-data provider (`ALPACA_API_KEY` + `ALPACA_SECRET_KEY`, or forced with
+> `DATA_SOURCE=alpaca`) with no FMP key required. FMP-only endpoints (earnings/economic
+> calendars, COT, 13F, S&P 500 constituents, dividends, fundamentals) degrade to their
+> documented fallbacks. Coverage details: `docs/en/alpaca-provider.md`.
 
 - **FMP API key:** Required. Pass `--api-key`, set `config.data.api_key`, or set the `FMP_API_KEY` environment variable, in that priority order.
 - **Other API keys:** None used.
