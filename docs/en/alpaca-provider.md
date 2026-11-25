@@ -38,6 +38,12 @@ skills are unchanged: `historical` returns
   full consolidated-tape volume). With `iex`, daily-bar volume is
   IEX-only and underreports consolidated volume.
 - `DATA_SOURCE` - `alpaca` / `fmp` / `auto` (unset)
+- `MARKET_DATA_ADAPTER` - full path to the shared machine-wide market-data
+  adapter module (default install:
+  `/mnt/shared/hermes/market-data-adapter/market_data_adapter.py`).
+  When set, bars/quotes delegate to it (including its cache) and the
+  embedded Alpaca implementation below stays as the fallback. Used to
+  share one data layer between multiple repos on the machine.
 - `MARKET_CACHE_PATH` - SQLite daily-bar cache database (e.g.
   `/mnt/shared/hermes/market-data/bars.db`). When set, daily-bar
   requests are served read-through: symbols fully covered by cached,

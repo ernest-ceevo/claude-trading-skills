@@ -392,15 +392,97 @@ class FMPClient:
     def _alpaca_fetch(self, endpoint_key, symbols_str, params) -> Optional[object]:
         """Route an endpoint through Alpaca; returns already-v3-shaped data or None.
 
-        Only the shared price surface is supported: "historical" (daily bars)
-        and "quote" (latest snapshot). Any other endpoint_key returns None so
-        the caller falls back to (or fails loudly on) the FMP chain.
+        When MARKET_DATA_ADAPTER points at the shared market-data adapter
+        module (multi-repo machine-wide adapter, see
+        /mnt/shared/hermes/market-data-adapter/README.md), delegation happens
+        there first — including its SQLite cache — and the embedded
+        implementation below stays as the fallback. Any other endpoint_key
+        returns None so the caller falls back to (or fails loudly on) the FMP
+        chain.
         """
+        adapter = self._shared_adapter()
+        if adapter is not None:
+            adapter_result = self._shared_adapter_fetch(endpoint_key, symbols_str, params)
+            if adapter_result is not None:
+                return adapter_result
         if endpoint_key == "historical":
             timeseries = params.get("timeseries") if isinstance(params, dict) else None
             return self._alpaca_historical(symbols_str, timeseries)
         if endpoint_key == "quote":
             return self._alpaca_quote(symbols_str)
+        return None
+
+    _SHARED_ADAPTER_PATH_ENV = "MARKET_DATA_ADAPTER"
+
+    def _shared_adapter(self):
+        """Load the optional shared market-data adapter module (fail-open)."""
+        if "_adapter_module" in self.__dict__:
+            return self.__dict__["_adapter_module"]
+        path = (os.getenv(self._SHARED_ADAPTER_PATH_ENV) or "").strip()
+        module = None
+        if path:
+            try:
+                import importlib.util
+
+                spec = importlib.util.spec_from_file_location(
+                    "shared_market_data_adapter", path
+                )
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+            except Exception as exc:  # pragma: no cover - fail-open
+                print(
+                    f"WARN: shared market-data adapter unavailable "
+                    f"({type(exc).__name__}: {exc}); using the embedded provider",
+                    file=sys.stderr,
+                )
+        self.__dict__["_adapter_module"] = module
+        return module
+
+    def _shared_adapter_fetch(self, endpoint_key, symbols_str, params) -> Optional[object]:
+        """Delegate a supported endpoint to the shared adapter; None on any gap."""
+        if getattr(self, "_adapter_module", None) is None:
+            return None
+        try:
+            if endpoint_key == "historical":
+                timeseries = params.get("timeseries") if isinstance(params, dict) else None
+                try:
+                    days = int(timeseries) if timeseries is not None else 730
+                except (TypeError, ValueError):
+                    days = 730
+                if days <= 0:
+                    days = 730
+                rows = self._adapter_module.MarketData().daily_bars_multi(
+                    symbols_str.split(","), days
+                )
+                entries = []
+                for orig in symbols_str.split(","):
+                    sym = orig.strip().upper().replace("-", ".")
+                    data_rows = rows.get(sym) or []
+                    fmp_rows = [
+                        {
+                            "date": r["date"], "open": r.get("open"),
+                            "high": r.get("high"), "low": r.get("low"),
+                            "close": r.get("close"),
+                            "adjClose": r.get("adj_close"), "volume": r.get("volume"),
+                        }
+                        for r in reversed(data_rows)
+                    ]
+                    if fmp_rows:
+                        entries.append({"symbol": sym.replace(".", "-"), "historical": fmp_rows})
+                if len(symbols_str.split(",")) == 1:
+                    return entries[0] if entries else None
+                return {"historicalStockList": entries} or None
+            if endpoint_key == "quote":
+                quotes = self._adapter_module.MarketData().quotes(symbols_str.split(","))
+                ordered = [quotes.get(s.strip().upper().replace("-", ".")) for s in symbols_str.split(",")]
+                result = [q for q in ordered if q]
+                return result or None
+        except Exception as exc:  # pragma: no cover - fail-open
+            print(
+                f"WARN: shared market-data adapter delegation failed "
+                f"({type(exc).__name__}: {exc}); using the embedded provider",
+                file=sys.stderr,
+            )
         return None
 
     def _alpaca_get(self, path: str, params: dict) -> Optional[dict]:
@@ -503,6 +585,17 @@ class FMPClient:
                 page_token = data.get("next_page_token")
                 if not page_token:
                     break
+            # Completed sessions only (mirrors the shared market-data adapter):
+            # an in-progress intraday bar for today must never be cached or
+            # served as final; FMP's raw timeseries would include it.
+            try:
+                completed_until = _cache_expected_latest_date()
+            except Exception:
+                completed_until = ""
+            if completed_until:
+                for sym in list(rows_by_symbol):
+                    for dte in [d for d in rows_by_symbol[sym] if d > completed_until]:
+                        del rows_by_symbol[sym][dte]
             if conn is not None and rows_by_symbol:
                 try:
                     for sym, by_date in rows_by_symbol.items():
