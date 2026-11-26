@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "generated_at": "2026-11-26 18:57:30",
+    "universe_description": "Custom (33 stocks)",
+    "max_candidates": 250,
+    "ext_threshold": 8.0,
+    "tuning_params": {
+      "min_contractions": 2,
+      "t1_depth_min": 10.0,
+      "breakout_volume_ratio": 1.5,
+      "trend_min_score": 85.0,
+      "atr_multiplier": 1.5,
+      "contraction_ratio": 0.7,
+      "min_contraction_days": 5,
+      "lookback_days": 120,
+      "max_sma200_extension": 50.0,
+      "wide_and_loose_threshold": 15.0,
+      "strict": false
+    },
+    "funnel": {
+      "universe": 33,
+      "pre_filter_passed": 0,
+      "trend_template_passed": 0,
+      "vcp_candidates": 0
+    },
+    "api_stats": {
+      "cache_entries": 7,
+      "api_calls_made": 0,
+      "rate_limit_reached": false
+    },
+    "price_bar_gap_exclusions": [
+      {
+        "symbol": "ADO",
+        "reason": "VCP price data unavailable: missing or invalid consumed OHLCV (quote (date unavailable))",
+        "data_gaps": {
+          "checked_bars": 1,
+          "bad_bars": 1,
+          "bad_indices": [
+            0
+          ],
+          "bad_dates": [
+            "quote (date unavailable)"
+          ],
+          "latest_bad": "quote (date unavailable)",
+          "required": [
+            "volume"
+          ],
+          "source": "quote"
+        }
+      },
+      {
+        "symbol": "AVP",
+        "reason": "VCP price data unavailable: missing or invalid consumed OHLCV (quote (date unavailable))",
+        "data_gaps": {
+          "checked_bars": 1,
+          "bad_bars": 1,
+          "bad_indices": [
+            0
+          ],
+          "bad_dates": [
+            "quote (date unavailable)"
+          ],
+          "latest_bad": "quote (date unavailable)",
+          "required": [
+            "volume"
+          ],
+          "source": "quote"
+        }
+      }
+    ]
+  },
+  "results": [],
+  "summary": {
+    "total": 0,
+    "textbook": 0,
+    "strong": 0,
+    "good": 0,
+    "developing": 0,
+    "weak": 0
+  },
+  "sector_distribution": {},
+  "evaluation_coverage": {
+    "schema_version": "1.0",
+    "universe_size": 33,
+    "evaluated": 0,
+    "not_evaluated": 33,
+    "not_evaluated_reasons": {
+      "missing_data": 31,
+      "price_bar_gap": 2
+    },
+    "verdict": "not_evaluable"
+  }
+}

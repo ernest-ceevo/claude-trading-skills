@@ -1,0 +1,223 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "generated_at": "2026-11-26 18:59:52",
+    "universe_description": "Custom (29 stocks)",
+    "max_candidates": 250,
+    "ext_threshold": 8.0,
+    "tuning_params": {
+      "min_contractions": 2,
+      "t1_depth_min": 10.0,
+      "breakout_volume_ratio": 1.5,
+      "trend_min_score": 85.0,
+      "atr_multiplier": 1.5,
+      "contraction_ratio": 0.7,
+      "min_contraction_days": 5,
+      "lookback_days": 120,
+      "max_sma200_extension": 50.0,
+      "wide_and_loose_threshold": 15.0,
+      "strict": false
+    },
+    "funnel": {
+      "universe": 29,
+      "pre_filter_passed": 2,
+      "trend_template_passed": 1,
+      "vcp_candidates": 1
+    },
+    "api_stats": {
+      "cache_entries": 9,
+      "api_calls_made": 0,
+      "rate_limit_reached": false
+    }
+  },
+  "results": [
+    {
+      "symbol": "KIM",
+      "company_name": "KIM",
+      "sector": "Unknown",
+      "price": 26.04,
+      "market_cap": 0,
+      "composite_score": 49.5,
+      "quality_rating": "No VCP",
+      "rating": "No VCP",
+      "rating_description": "Does not qualify as a VCP setup",
+      "guidance": "Not actionable as VCP",
+      "valid_vcp": false,
+      "execution_state": "Pre-breakout",
+      "execution_state_reasons": [
+        "-2.2% below pivot (forming pattern)"
+      ],
+      "pattern_type": "VCP-adjacent",
+      "wide_and_loose": false,
+      "state_cap_applied": false,
+      "cap_reason": null,
+      "sma200_distance_pct": 8.8,
+      "distance_from_pivot_pct": -2.25,
+      "weakest_component": "Contraction Quality",
+      "weakest_score": 0,
+      "strongest_component": "Trend Template (Stage 2)",
+      "strongest_score": 95,
+      "trend_template": {
+        "score": 95,
+        "raw_score": 100,
+        "passed": true,
+        "extended_penalty": -5,
+        "sma200_penalty": 0,
+        "sma50_distance_pct": 9.67,
+        "sma200_distance_pct": 8.81,
+        "criteria_passed": 7,
+        "criteria_total": 7,
+        "criteria": {
+          "c1_price_above_sma150_200": {
+            "passed": true,
+            "detail": "Price $26.04 vs SMA150 $24.22 / SMA200 $23.93"
+          },
+          "c2_sma150_above_sma200": {
+            "passed": true,
+            "detail": "SMA150 $24.22 vs SMA200 $23.93"
+          },
+          "c3_sma200_trending_up": {
+            "passed": true,
+            "detail": "SMA200 today $23.93 vs 22d ago $23.46"
+          },
+          "c4_price_above_sma50": {
+            "passed": true,
+            "detail": "Price $26.04 vs SMA50 $23.74"
+          },
+          "c5_25pct_above_52w_low": {
+            "passed": true,
+            "detail": "31.7% above 52w low $19.77 (need >= 25%)"
+          },
+          "c6_within_25pct_52w_high": {
+            "passed": true,
+            "detail": "2.3% below 52w high $26.64 (need <= 25%)"
+          },
+          "c7_rs_rank_above_70": {
+            "passed": true,
+            "detail": "RS Rank: 80 (need > 70)"
+          }
+        },
+        "sma50": 23.74,
+        "sma150": 24.22,
+        "sma200": 23.93,
+        "error": null
+      },
+      "vcp_pattern": {
+        "score": 0,
+        "valid_vcp": false,
+        "contractions": [
+          {
+            "label": "T1",
+            "high_idx": 34,
+            "high_price": 26.64,
+            "high_date": "2026-07-28",
+            "low_idx": 44,
+            "low_price": 23.93,
+            "low_date": "2026-08-11",
+            "depth_pct": 10.21,
+            "duration_days": 10
+          }
+        ],
+        "num_contractions": 1,
+        "pivot_price": 26.64,
+        "atr_value": 0.4136,
+        "atr_compression_ratio": 1.048,
+        "wide_and_loose": false,
+        "right_side_range_ratio": null,
+        "error": "Fewer than 2 contractions found"
+      },
+      "volume_pattern": {
+        "score": 20,
+        "dry_up_ratio": 1.006,
+        "avg_volume_50d": 434465,
+        "avg_volume_recent_10d": 437202,
+        "breakout_volume_detected": false,
+        "breakout_volume_score": 0,
+        "up_volume_days_20d": 8,
+        "down_volume_days_20d": 5,
+        "net_accumulation": 3,
+        "error": null,
+        "zone_analysis": {
+          "zone_a_avg_volume": 320449,
+          "zone_a_ratio": 0.738,
+          "zone_b_avg_volume": 437202,
+          "zone_b_ratio": 1.006,
+          "zone_c_volume": null,
+          "zone_c_ratio": null
+        },
+        "contraction_volume_trend": {
+          "declining": false,
+          "contraction_volumes": [
+            320449
+          ]
+        }
+      },
+      "pivot_proximity": {
+        "score": 75,
+        "distance_from_pivot_pct": -2.25,
+        "pivot_price": 26.64,
+        "stop_loss_price": 23.69,
+        "risk_pct": 9.02,
+        "trade_status": "NEAR PIVOT (2-5% below)",
+        "error": null
+      },
+      "relative_strength": {
+        "score": 70,
+        "rs_rank_estimate": 80,
+        "weighted_rs": 14.36,
+        "period_details": [
+          {
+            "period_days": 63,
+            "weight": 0.4,
+            "stock_return_pct": 9.32,
+            "sp500_return_pct": -7.06,
+            "relative_pct": 16.38
+          },
+          {
+            "period_days": 126,
+            "weight": 0.2,
+            "stock_return_pct": 7.69,
+            "sp500_return_pct": -5.03,
+            "relative_pct": 12.72
+          },
+          {
+            "period_days": 189,
+            "weight": 0.2,
+            "stock_return_pct": 10.08,
+            "sp500_return_pct": 3.98,
+            "relative_pct": 6.11
+          },
+          {
+            "period_days": 252,
+            "weight": 0.2,
+            "stock_return_pct": 27.37,
+            "sp500_return_pct": 7.16,
+            "relative_pct": 20.2
+          }
+        ],
+        "error": null,
+        "rs_percentile": 74
+      },
+      "entry_ready": false
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "textbook": 0,
+    "strong": 0,
+    "good": 0,
+    "developing": 0,
+    "weak": 1
+  },
+  "sector_distribution": {
+    "Unknown": 1
+  },
+  "evaluation_coverage": {
+    "schema_version": "1.0",
+    "universe_size": 29,
+    "evaluated": 29,
+    "not_evaluated": 0,
+    "not_evaluated_reasons": {},
+    "verdict": "complete"
+  }
+}

@@ -783,6 +783,38 @@ def main():
     all_quotes = client.get_batch_quotes(symbols)
     print(f"OK ({len(all_quotes)} quotes)")
 
+    # The shared market-data adapter's snapshot quotes carry no 52-week
+    # high/low, which both quote_problem() and pre_filter_stock() require.
+    # Reconstruct them from the adapter's 260-day daily bars so the shared
+    # datasource supports the same funnel as the native FMP quote.
+    for sym in symbols:
+        quote = all_quotes.get(sym)
+        if not isinstance(quote, dict) or not quote:
+            continue
+        if quote.get("yearHigh") is not None and quote.get("yearLow") is not None:
+            continue
+        try:
+            data = client.get_historical_prices(sym, days=260)
+        except Exception as exc:  # pragma: no cover - best effort
+            print(f"WARN: could not reconstruct 52w range for {sym}: {exc}", file=sys.stderr)
+            continue
+        rows = (data or {}).get("historical") or []
+        highs = []
+        lows = []
+        for r in rows:
+            if not isinstance(r, dict):
+                continue
+            high, low = r.get("high"), r.get("low")
+            if isinstance(high, (int, float)) and not isinstance(high, bool):
+                highs.append(float(high))
+            if isinstance(low, (int, float)) and not isinstance(low, bool):
+                lows.append(float(low))
+        if highs and lows:
+            quote.setdefault("yearHigh", max(highs))
+            quote.setdefault("yearLow", min(lows))
+        else:
+            print(f"WARN: no bar history for 52w range of {sym}", file=sys.stderr)
+
     # Apply pre-filter
     print("  Applying pre-filter...", end=" ", flush=True)
     pre_filtered = []

@@ -473,8 +473,33 @@ class FMPClient:
                     return entries[0] if entries else None
                 return {"historicalStockList": entries} or None
             if endpoint_key == "quote":
-                quotes = self._adapter_module.MarketData().quotes(symbols_str.split(","))
-                ordered = [quotes.get(s.strip().upper().replace("-", ".")) for s in symbols_str.split(",")]
+                fmp_syms = symbols_str.split(",")
+                quotes = self._adapter_module.MarketData().quotes(fmp_syms)
+                # Adapter quotes carry no 52-week range; consumers'
+                # quote_problem() hard-requires yearHigh/yearLow. Derive them
+                # from daily bars (cache or live) so quotes stay evaluable.
+                for s in fmp_syms:
+                    alp = s.strip().upper().replace("-", ".")
+                    q = quotes.get(alp)
+                    if isinstance(q, dict) and q.get("yearHigh") is None:
+                        try:
+                            bars = self._adapter_module.MarketData().daily_bars(
+                                s.strip(), 260
+                            )
+                        except Exception:
+                            bars = []
+                        highs = [r["high"] for r in bars if r.get("high")]
+                        lows = [r["low"] for r in bars if r.get("low")]
+                        if highs and lows:
+                            q["yearHigh"] = max(highs)
+                            q["yearLow"] = min(lows)
+                        if q.get("avgVolume") is None and bars:
+                            # v3 avgVolume was a multi-day average; the adapter
+                            # snapshots only carry single-session volume.
+                            vols = [r["volume"] for r in bars[-50:] if r.get("volume")]
+                            if vols:
+                                q["avgVolume"] = sum(vols) / len(vols)
+                ordered = [quotes.get(s.strip().upper().replace("-", ".")) for s in fmp_syms]
                 result = [q for q in ordered if q]
                 return result or None
         except Exception as exc:  # pragma: no cover - fail-open
